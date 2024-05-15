@@ -39,7 +39,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     public Mono<ResponseEntity<UserResponse>> updateUser(@PathVariable String id, @RequestBody UpsertUserRequest userRequest){
-        return userService.update(id, userMapper.toUser(userRequest))
+         return userService.update(id, userMapper.toUser(userRequest))
                 .map(userMapper::toUserResponse)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.badRequest().build());

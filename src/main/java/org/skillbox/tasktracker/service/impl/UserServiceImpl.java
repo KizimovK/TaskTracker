@@ -3,14 +3,17 @@ package org.skillbox.tasktracker.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.skillbox.tasktracker.entity.User;
+import org.skillbox.tasktracker.exception.EntityNotFoundException;
 import org.skillbox.tasktracker.repository.UserRepository;
 import org.skillbox.tasktracker.service.UserService;
-import org.springframework.beans.BeanUtils;
+import org.skillbox.tasktracker.utils.CopyUtil;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.UUID;
+import java.text.MessageFormat;
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -24,24 +27,28 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Mono<User> findById(String id) {
-        return userRepository.findById(id);
+        return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(() -> new EntityNotFoundException(
+                        MessageFormat.format("User not found by id {0}", id))));
     }
 
     @Override
     public Mono<User> save(User user) {
-//        user.setId(UUID.randomUUID().toString());
         log.info("Create new user: {}", user);
         return userRepository.insert(user);
     }
 
     @Override
     public Mono<User> update(String id, User user) {
-        log.info("Update user by id: {}", id);
-        return userRepository.findById(id).flatMap(updateUser->{
-            // todo: из одного в другой объект, объекты одинакового типа, поля содержащие null не переносятся
-            // при обновлении записи MongoDB создает новый ID
-            return userRepository.save(updateUser);
-        });
+        return userRepository.findById(id)
+                .flatMap(existedUser -> {
+                    CopyUtil.nullNotCopy(user, existedUser);
+                    log.info("Update user by id: {}", id);
+                    return userRepository.save(existedUser);
+                })
+                .switchIfEmpty(Mono.error(() -> new EntityNotFoundException(
+                        MessageFormat.format("User not found by id {0}", id)
+                )));
     }
 
     @Override
