@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.stream.Collectors;
 
-public class TaskMapperDelegate implements TaskMapper {
+public abstract class TaskMapperDelegate implements TaskMapper {
     @Autowired
     private UserRepository userRepository;
 
@@ -30,4 +30,5 @@ public class TaskMapperDelegate implements TaskMapper {
             return taskResponse;
         }
     }
+
 }

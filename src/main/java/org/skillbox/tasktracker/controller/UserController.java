@@ -6,7 +6,7 @@ import org.skillbox.tasktracker.dto.UserResponse;
 import org.skillbox.tasktracker.entity.User;
 import org.skillbox.tasktracker.mapper.UserMapper;
 import org.skillbox.tasktracker.service.UserService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -19,36 +19,32 @@ public class UserController {
     private final UserMapper userMapper;
 
     @GetMapping
-    public Flux<User> getAllUser(){
-        return userService.findAll();
+    public Flux<UserResponse> getAllUser(){
+        return userService.findAll().map(userMapper::toUserResponse);
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<User>> getUserById(@PathVariable String id){
-        return userService.findById(id)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+    public Mono<User> getUserById(@PathVariable String id){
+        return userService.findById(id);
     }
 
     @PostMapping
-    public Mono<ResponseEntity<UserResponse>> createUser(@RequestBody UpsertUserRequest userRequest){
-        return userService.save(userMapper.toUser(userRequest))
-                .map(userMapper::toUserResponse)
-                .map(ResponseEntity::ok);
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<UserResponse> createUser(@RequestBody UpsertUserRequest userRequest){
+        return userService.save(userMapper.toUser(userRequest)).map(userMapper::toUserResponse);
     }
 
     @PutMapping("/{id}")
-    public Mono<ResponseEntity<UserResponse>> updateUser(@PathVariable String id, @RequestBody UpsertUserRequest userRequest){
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Mono<UserResponse> updateUser(@PathVariable String id, @RequestBody UpsertUserRequest userRequest){
          return userService.update(id, userMapper.toUser(userRequest))
-                .map(userMapper::toUserResponse)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.badRequest().build());
+                .map(userMapper::toUserResponse);
     }
 
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Void>> deleteById(@PathVariable String id){
-        return userService.deleteById(id)
-                .map(ResponseEntity::ok);
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Void> deleteById(@PathVariable String id){
+        return userService.deleteById(id);
     }
 
 }

@@ -4,6 +4,7 @@ import org.mapstruct.DecoratedWith;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 import org.skillbox.tasktracker.dto.TaskResponse;
+import org.skillbox.tasktracker.dto.UpsertTaskRequest;
 import org.skillbox.tasktracker.entity.Task;
 import org.skillbox.tasktracker.mapper.delegate.TaskMapperDelegate;
 
@@ -12,4 +13,6 @@ import org.skillbox.tasktracker.mapper.delegate.TaskMapperDelegate;
 public interface TaskMapper {
 
     TaskResponse toTaskResponse(Task task);
+
+    Task toTask(UpsertTaskRequest taskRequest);
 }
