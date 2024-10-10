@@ -1,4 +1,4 @@
-package org.skillbox.tasktracker.dto;
+package org.skillbox.tasktracker.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

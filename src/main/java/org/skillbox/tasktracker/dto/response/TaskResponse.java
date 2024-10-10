@@ -1,4 +1,4 @@
-package org.skillbox.tasktracker.dto;
+package org.skillbox.tasktracker.dto.response;
 
 import lombok.Data;
 import org.skillbox.tasktracker.entity.TaskStatus;

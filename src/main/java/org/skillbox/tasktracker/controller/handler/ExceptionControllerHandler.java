@@ -1,6 +1,6 @@
 package org.skillbox.tasktracker.controller.handler;
 
-import org.skillbox.tasktracker.dto.ExceptionResponse;
+import org.skillbox.tasktracker.dto.response.ExceptionResponse;
 import org.skillbox.tasktracker.exception.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
