@@ -2,11 +2,11 @@ package org.skillbox.tasktracker.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.reactivestreams.Subscriber;
 import org.skillbox.tasktracker.entity.Task;
+import org.skillbox.tasktracker.entity.TaskStatus;
 import org.skillbox.tasktracker.entity.User;
 import org.skillbox.tasktracker.exception.EntityNotFoundException;
-import org.skillbox.tasktracker.mapper.TaskMapper;
-import org.skillbox.tasktracker.model.TaskModel;
 import org.skillbox.tasktracker.repository.TaskRepository;
 import org.skillbox.tasktracker.repository.UserRepository;
 import org.skillbox.tasktracker.service.TaskService;
@@ -24,83 +24,94 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
-    private final TaskMapper taskMapper;
 
+    private Mono<Task> getFullTask(Mono<Task> taskMono) {
+
+        Mono<User> authorMono = taskMono.flatMap(task -> {
+            return userRepository.findById(task.getAuthorId());
+        });
+        Mono<User> assigneeMono = taskMono.flatMap(task -> {
+            return userRepository.findById(task.getAssigneeId());
+        });
+        Flux<User> observerFlux = taskMono.flatMapMany(task -> {
+            return userRepository.findAllById(task.getObserverIds());
+        });
+        Mono<Task> taskMonoAllFields = Mono.zip(taskMono, authorMono, assigneeMono)
+                .map(tuple -> {
+                    tuple.getT1().setAuthor(tuple.getT2());
+                    tuple.getT1().setAssignee(tuple.getT3());
+                    return tuple.getT1();
+                });
+        return taskMonoAllFields.zipWith(observerFlux.collectList(), (task, observedList) -> {
+            observedList.forEach(task::addObserver);
+            return task;
+        });
+
+    }
 
     @Override
-    public Flux<TaskModel> findAll() {
+    public Flux<Task> findAll() {
+        log.info("Find all task");
         return taskRepository.findAll()
-                .map(taskMapper::toTaskModelFromTask);
+                .flatMap(task -> getFullTask(Mono.just(task)));
     }
 
     @Override
-    public Mono<TaskModel> findById(String id) {
-        return taskRepository.findById(id)
-                .map(taskMapper::toTaskModelFromTask)
+    public Mono<Task> findById(String idTask) {
+
+        return getFullTask(taskRepository.findById(idTask)
                 .switchIfEmpty(Mono.error(() -> new EntityNotFoundException(
-                        MessageFormat.format("Task not found by id {0}", id))));
+                        MessageFormat.format("Task not found by id {0}", idTask)))));
     }
 
-//ToDO: refracting method save change User on UserModel, setStatus do not make
+
     @Override
-    public Mono<TaskModel> save(Task task) {
-        Mono<TaskModel> taskModelMono = Mono.zip(userRepository.existsById(task.getAuthorId()), userRepository.existsById(task.getAssigneeId()))
+    public Mono<Task> save(Task task) {
+        Mono<Task> taskMono = Mono.zip(userRepository.existsById(task.getAuthorId()), userRepository.existsById(task.getAssigneeId()))
                 .flatMap(tuple -> {
                     if (tuple.getT1() && tuple.getT2()) {
-                        return taskRepository.save(task);
+                        task.setStatus(TaskStatus.TODO);
+                        return taskRepository.insert(task);
                     } else {
                         return Mono.error(() -> new EntityNotFoundException("The author or assignee was not found among the users"));
                     }
-                })
-                .map(taskMapper::toTaskModelFromTask);
-        log.info("Create new task: {}", task.getName());
-        return Mono.zip(taskModelMono, userRepository.findById(task.getAuthorId()), userRepository.findById(task.getAssigneeId()))
-                .map(t -> {
-                    t.getT1().setAuthor(t.getT2());
-                    t.getT1().setAssignee(t.getT3());
-                    return  t.getT1();
                 });
-    }
-
-    private Mono<TaskModel> setFieldsTaskModel(Mono<TaskModel> taskModelMono,Mono<User> author,
-                                               Mono<User> assignee, Flux<User> observedFlux){
-       Mono<TaskModel> taskModel =  Mono.zip(taskModelMono, author, assignee)
-                .map(t -> {
-                    t.getT1().setAuthor(t.getT2());
-                    t.getT1().setAssignee(t.getT3());
-                    return  t.getT1();
-                });
-       if (observedFlux.hasElements().block()){
-           taskModel.zipWith(observedFlux, (t, o) -> {
-               t.addObserver();
-           })
-       }
-       return taskModel;
+        log.info("Save new task");
+        return getFullTask(taskMono);
 
     }
-    // TOdo: update and addObserver
+
     @Override
-    public Mono<TaskModel> update(String id, Task task) {
-        return taskRepository.findById(id).flatMap(existedTask -> {
+    public Mono<Task> update(String idTask, Task task) {
+        log.info("Update task id: {}", idTask);
+        return getFullTask(findById(idTask)
+                .flatMap(existedTask -> {
                     BeanUtils.copyProperties(task, existedTask);
                     return taskRepository.save(existedTask);
-                })
-                .map(taskMapper::toTaskModelFromTask);
+                }));
     }
 
     @Override
-    public Mono<TaskModel> addObserver(String idTask, String observerId) {
-        return taskRepository.findById(idTask).flatMap(existedTask -> {
-//            User observed = userService.findById(observerId).block();
-//            existedTask.addObserver(observed);
-                    return taskRepository.save(existedTask);
-                })
-                .map(taskMapper::toTaskModelFromTask);
+    public Mono<Task> addObserver(String idTask, String observerId) {
+
+        Mono<Task> taskMono = getFullTask(taskRepository.findById(idTask)
+                .switchIfEmpty(Mono.error(() -> new EntityNotFoundException(
+                        MessageFormat.format("Task not found by this id {0}", idTask)))));
+
+        Mono<User> observerMono = userRepository.findById(observerId).switchIfEmpty(Mono.error(() -> new EntityNotFoundException(
+                MessageFormat.format("User (observed) not found by this id {0}", observerId))));
+        log.info("Add observed user id: {} in task id: {}",observerId,idTask);
+        return getFullTask(
+                Mono.zip(taskMono, observerMono).flatMap(tuple -> {
+                    tuple.getT1().addObserver(tuple.getT2());
+                    return taskRepository.save(tuple.getT1());
+                }));
     }
+
 
     @Override
-    public Mono<Void> deleteById(String id) {
-        return taskRepository.deleteById(id);
+    public Mono<Void> deleteById(String idTask) {
+        log.info("delete task id: {}", idTask);
+        return taskRepository.deleteById(idTask);
     }
-
 }

@@ -37,6 +37,21 @@ public class TaskController {
                 .map(taskMapper::toTaskResponseFromTaskModel);
     }
 
+    @PutMapping("/{id}/add")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Mono<TaskResponse> addObservedUser(@PathVariable String id, @RequestBody String observedId){
+        return taskService.addObserver(id,observedId).map(taskMapper::toTaskResponse);
+    }
 
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Mono<TaskResponse> updateTask(@PathVariable String id, @RequestBody UpsertTaskRequest taskRequest){
+        return taskService.update(id,taskMapper.toTask(taskRequest)).map(taskMapper::toTaskResponse);
+    }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Void> deleteById(@PathVariable String id){
+        return taskService.deleteById(id);
+    }
 }
