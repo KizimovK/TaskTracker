@@ -3,7 +3,6 @@ package org.skillbox.tasktracker.controller;
 import lombok.RequiredArgsConstructor;
 import org.skillbox.tasktracker.dto.request.UpsertUserRequest;
 import org.skillbox.tasktracker.dto.response.UserResponse;
-import org.skillbox.tasktracker.entity.User;
 import org.skillbox.tasktracker.mapper.UserMapper;
 import org.skillbox.tasktracker.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -21,27 +20,27 @@ public class UserController {
     @GetMapping
     public Flux<UserResponse> getAllUser(){
         return userService.findAll()
-                .map(userMapper::toUserResponseFromUserModel);
+                .map(userMapper::toUserResponse);
     }
 
     @GetMapping("/{id}")
     public Mono<UserResponse> getUserById(@PathVariable String id){
         return userService.findById(id)
-                .map(userMapper::toUserResponseFromUserModel);
+                .map(userMapper::toUserResponse);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<UserResponse> createUser(@RequestBody UpsertUserRequest userRequest){
         return userService.save(userMapper.toUserFromUpsertUserRequest(userRequest))
-                .map(userMapper::toUserResponseFromUserModel);
+                .map(userMapper::toUserResponse);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Mono<UserResponse> updateUser(@PathVariable String id, @RequestBody UpsertUserRequest userRequest){
          return userService.update(id, userMapper.toUserFromUpsertUserRequest(userRequest))
-                .map(userMapper::toUserResponseFromUserModel);
+                .map(userMapper::toUserResponse);
     }
 
     @DeleteMapping("/{id}")

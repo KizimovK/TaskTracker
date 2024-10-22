@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.skillbox.tasktracker.entity.User;
 import org.skillbox.tasktracker.exception.EntityNotFoundException;
-import org.skillbox.tasktracker.mapper.UserMapper;
-import org.skillbox.tasktracker.model.UserModel;
 import org.skillbox.tasktracker.repository.UserRepository;
 import org.skillbox.tasktracker.service.UserService;
 import org.skillbox.tasktracker.utils.CopyUtil;
@@ -21,37 +19,33 @@ import java.text.MessageFormat;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
-    private final UserMapper userMapper;
 
     @Override
-    public Flux<UserModel> findAll() {
-        return userRepository.findAll().map(userMapper::toUserModelFromUser);
+    public Flux<User> findAll() {
+        return userRepository.findAll();
     }
 
     @Override
-    public Mono<UserModel> findById(String id) {
+    public Mono<User> findById(String id) {
         return userRepository.findById(id)
-                .map(userMapper::toUserModelFromUser)
                 .switchIfEmpty(Mono.error(() -> new EntityNotFoundException(
                         MessageFormat.format("User not found by id {0}", id))));
     }
 
     @Override
-    public Mono<UserModel> save(User user) {
+    public Mono<User> save(User user) {
         log.info("Create new user: {}", user);
-        return userRepository.insert(user)
-                .map(userMapper::toUserModelFromUser);
+        return userRepository.insert(user);
     }
 
     @Override
-    public Mono<UserModel> update(String id, User user) {
+    public Mono<User> update(String id, User user) {
         return userRepository.findById(id)
                 .flatMap(existedUser -> {
                     CopyUtil.nullNotCopy(user, existedUser);
                     log.info("Update user by id: {}", id);
                     return userRepository.save(existedUser);
                 })
-                .map(userMapper::toUserModelFromUser)
                 .switchIfEmpty(Mono.error(() -> new EntityNotFoundException(
                         MessageFormat.format("User not found by id {0}", id)
                 )));

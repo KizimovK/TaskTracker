@@ -62,12 +62,14 @@ public class TaskServiceImpl implements TaskService {
     public Mono<Task> save(Task task) {
         Mono<Task> taskMono = Mono.zip(userRepository.existsById(task.getAuthorId()), userRepository.existsById(task.getAssigneeId()))
                 .flatMap(tuple -> {
-                    if (tuple.getT1() && tuple.getT2()) {
-                        task.setStatus(TaskStatus.TODO);
-                        return taskRepository.insert(task);
-                    } else {
-                        return Mono.error(() -> new EntityNotFoundException("The author or assignee was not found among the users"));
+                    if (!tuple.getT1()) {
+                        return Mono.error(() -> new EntityNotFoundException("The author  was not found among the users"));
                     }
+                    if (!tuple.getT2()) {
+                        return Mono.error(() -> new EntityNotFoundException("The assignee was not found among the users"));
+                    }
+                    task.setStatus(TaskStatus.TODO);
+                    return taskRepository.insert(task);
                 });
         log.info("Save new task");
         return getFullTask(taskMono);
@@ -93,7 +95,7 @@ public class TaskServiceImpl implements TaskService {
 
         Mono<User> observerMono = userRepository.findById(observerId).switchIfEmpty(Mono.error(() -> new EntityNotFoundException(
                 MessageFormat.format("User (observed) not found by this id {0}", observerId))));
-        log.info("Add observed user id: {} in task id: {}",observerId,idTask);
+        log.info("Add observed user id: {} in task id: {}", observerId, idTask);
         return getFullTask(
                 Mono.zip(taskMono, observerMono).flatMap(tuple -> {
                     tuple.getT1().addObserver(tuple.getT2());
