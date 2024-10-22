@@ -7,11 +7,15 @@ import org.skillbox.tasktracker.dto.request.UpsertTaskRequest;
 import org.skillbox.tasktracker.entity.Task;
 
 
-
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface TaskMapper {
 
-    TaskResponse toTaskResponse(Task task);
+
+
+
+    Task toTaskFromUpsertTaskRequest(UpsertTaskRequest taskRequest);
 
     Task toTask(UpsertTaskRequest taskRequest);
+
+    TaskResponse toTaskResponse(Task task);
 }

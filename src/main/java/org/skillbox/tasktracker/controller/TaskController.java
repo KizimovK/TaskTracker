@@ -21,20 +21,20 @@ public class TaskController {
     @GetMapping
     Flux<TaskResponse> getAllTask(){
         return taskService.findAll()
-                .map(taskMapper::toTaskResponseFromTaskModel);
+                .map(taskMapper::toTaskResponse);
     }
 
     @GetMapping("/{id}")
     Mono<TaskResponse> getTaskById(@PathVariable String id){
         return taskService.findById(id)
-                .map(taskMapper::toTaskResponseFromTaskModel);
+                .map(taskMapper::toTaskResponse);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     Mono<TaskResponse> createTask(@RequestBody UpsertTaskRequest taskRequest){
         return taskService.save(taskMapper.toTaskFromUpsertTaskRequest(taskRequest))
-                .map(taskMapper::toTaskResponseFromTaskModel);
+                .map(taskMapper::toTaskResponse);
     }
 
     @PutMapping("/{id}/add")

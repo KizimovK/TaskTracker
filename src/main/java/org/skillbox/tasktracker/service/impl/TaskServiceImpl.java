@@ -2,7 +2,6 @@ package org.skillbox.tasktracker.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.reactivestreams.Subscriber;
 import org.skillbox.tasktracker.entity.Task;
 import org.skillbox.tasktracker.entity.TaskStatus;
 import org.skillbox.tasktracker.entity.User;
@@ -27,15 +26,9 @@ public class TaskServiceImpl implements TaskService {
 
     private Mono<Task> getFullTask(Mono<Task> taskMono) {
 
-        Mono<User> authorMono = taskMono.flatMap(task -> {
-            return userRepository.findById(task.getAuthorId());
-        });
-        Mono<User> assigneeMono = taskMono.flatMap(task -> {
-            return userRepository.findById(task.getAssigneeId());
-        });
-        Flux<User> observerFlux = taskMono.flatMapMany(task -> {
-            return userRepository.findAllById(task.getObserverIds());
-        });
+        Mono<User> authorMono = taskMono.flatMap(task -> userRepository.findById(task.getAuthorId()));
+        Mono<User> assigneeMono = taskMono.flatMap(task -> userRepository.findById(task.getAssigneeId()));
+        Flux<User> observerFlux = taskMono.flatMapMany(task -> userRepository.findAllById(task.getObserverIds()));
         Mono<Task> taskMonoAllFields = Mono.zip(taskMono, authorMono, assigneeMono)
                 .map(tuple -> {
                     tuple.getT1().setAuthor(tuple.getT2());
