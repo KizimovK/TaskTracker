@@ -1,3 +1,4 @@
+
 spring:
   data:
     mongodb:
@@ -7,3 +8,6 @@ spring:
       username: admin
       password: testtest
       authentication-database: admin
+#logging:
+#  level:
+#    root: debug
