@@ -27,7 +27,6 @@ public class TaskServiceImpl implements TaskService {
 
 
     private Mono<Task> getFullTask(Task task) {
-
         Mono<User> authorMono = userRepository.findById(task.getAuthorId());
         Mono<User> assigneeMono = userRepository.findById(task.getAssigneeId());
         Flux<User> observerFlux = userRepository.findAllById(task.getObserverIds());
@@ -61,7 +60,6 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public Mono<Task> save(Task task) {
         log.info("Save new task");
-
         return Mono.zip(userRepository.existsById(task.getAuthorId()), userRepository.existsById(task.getAssigneeId()))
                 .flatMap(tuple -> {
                     if (!tuple.getT1()) {

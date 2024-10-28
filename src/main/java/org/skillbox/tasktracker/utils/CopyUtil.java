@@ -9,7 +9,6 @@ public class CopyUtil {
 
     @SneakyThrows
     public static void nullNotCopy(Object source, Object target){
-
         Class<?> clazz = source.getClass();
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields){
