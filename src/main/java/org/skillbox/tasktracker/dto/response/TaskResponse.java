@@ -2,7 +2,6 @@ package org.skillbox.tasktracker.dto.response;
 
 import lombok.Data;
 import org.skillbox.tasktracker.entity.TaskStatus;
-import org.skillbox.tasktracker.entity.User;
 
 
 import java.time.Instant;
@@ -23,9 +22,9 @@ public class TaskResponse {
 
     private TaskStatus status;
 
-    private User author;
+    private UserResponse author;
 
-    private User assignee;
+    private UserResponse assignee;
 
-    private Set<User> observers = new HashSet<>();
+    private Set<UserResponse> observers = new HashSet<>();
 }

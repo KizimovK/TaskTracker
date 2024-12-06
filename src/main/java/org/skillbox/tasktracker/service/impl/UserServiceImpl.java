@@ -7,6 +7,7 @@ import org.skillbox.tasktracker.exception.EntityNotFoundException;
 import org.skillbox.tasktracker.repository.UserRepository;
 import org.skillbox.tasktracker.service.UserService;
 import org.skillbox.tasktracker.utils.CopyUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -19,6 +20,7 @@ import java.text.MessageFormat;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public Flux<User> findAll() {
@@ -34,12 +36,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Mono<User> save(User user) {
-        log.info("Create new user: {}", user);
-        return userRepository.insert(user);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return userRepository.insert(user).doOnSuccess(u -> log.info("Create new user: {}", u));
     }
 
     @Override
     public Mono<User> update(String id, User user) {
+        if (!user.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         return userRepository.findById(id)
                 .flatMap(existedUser -> {
                     CopyUtil.nullNotCopy(user, existedUser);
@@ -56,4 +61,13 @@ public class UserServiceImpl implements UserService {
         log.info("User delete by id: {}", id);
         return userRepository.deleteById(id);
     }
+
+    @Override
+    public Mono<User> findByUsername(String username) {
+        return userRepository.findByUsername(username).switchIfEmpty(Mono.error(() -> new EntityNotFoundException(
+                MessageFormat.format("User not found by name {0}", username)
+        )));
+    }
+
+
 }
